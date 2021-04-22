@@ -22,7 +22,7 @@ class GooglePhotos:
         "removeMediaFromAlbum": "https://photoslibrary.googleapis.com/v1/albums/{}:batchRemoveMediaItems"
     }
     scope = ["https://www.googleapis.com/auth/photoslibrary"]
-    sleep_time = 1.2
+    sleep_time = 0.5
     photo_size_format = "{base}=w{width}-h{height}"
  
     def __init__(self, directory, token_path="token.json", credential_path="credentials.json"):
@@ -349,6 +349,7 @@ class GooglePhotos:
                         }
                     }
             upload_tokens.append(item)
+            time.sleep(GooglePhotos.sleep_time)
 
         logger.info(f'Uploaded: {len(image_files)}')
 
