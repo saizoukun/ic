@@ -318,6 +318,8 @@ class GoogleSearch(object):
 
 
     def image_search(self, query_gen, maximum, twitterMode=False, keyword=""):
+        logger.info(f"image_search:[{keyword}]")
+
         results = set()
         total = 0
         no_count = 10
@@ -336,6 +338,8 @@ class GoogleSearch(object):
 
             if twitterMode:
                 image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', html)
+                twiurl = f'"(https://twitter.com/{keyword}/status/[\w]+)(\?.*)"';
+                image_url_list += re.findall(twiurl, html)
             else:
                 image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(png|gif|jpg)"', html)
 
@@ -362,6 +366,8 @@ class GoogleSearch(object):
 
 
     def image_search_twitter(self, query_gen, maximum, twitterMode=True, keyword=""):
+        logger.info(f"image_search_twitter:[{keyword}]")
+
         results = set()
         total = 0
         no_count = 10
@@ -457,6 +463,8 @@ class GoogleSearch(object):
 
 
     def image_search_site(self, site, title="", twitterMode=False):
+        logger.info(f"image_search_site:[{keyword}]")
+
         results = []
         query_url = site
         base_fqdn = urlparse(query_url).netloc
@@ -476,8 +484,10 @@ class GoogleSearch(object):
             image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(mp4).*"', html)
 
         for link in links:
+            #print("link", link)
             src = link.get("src")
             if src:
+                #print("src", src)
                 src = src if "http" in src else site + src
                 if twitterMode:
                     # https://pbs.twimg.com/media/EXgQ7pWUYAEmu2Y.jpg:small
@@ -490,7 +500,8 @@ class GoogleSearch(object):
                             if len(img) != 0:
                                 image_url_list.append([img[0], ".jpg"])
                 else:
-                    src = re.findall(r'(https://[\w%,#!&*/\+\?\.-]*\.)(png|gif|jpg)', src)
+                    src = re.findall(r'(http[s]*://[\w%,#!&*/\+\?\.-]*\.)(png|gif|jpg)', src)
+                    #print("src", src)
                     if len(src) > 0:
                         image_url_list.append(src[0])
 
@@ -526,6 +537,8 @@ class GoogleSearch(object):
 
 
     def link_search_site(self, site, url_link_list, keyword="", limit=0, count=0, twitterMode=False):
+        logger.info(f"link_search_site:[{keyword}]")
+
         query_url = site
         logger.info("url:{}".format(query_url))
         base_fqdn = urlparse(query_url).netloc
@@ -581,6 +594,8 @@ class GoogleSearch(object):
 
 
     def get_twitter_user_search(self, keyword="", need_keyword="", or_keyword="", not_keyword="", page=25):
+        logger.info(f"get_twitter_user_search:[{keyword}]")
+
         #query_url = "https://mobile.twitter.com/search?"
         query_url = "https://twitter.com/search?"
 

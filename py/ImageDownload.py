@@ -22,7 +22,7 @@ class ImageDownload(object):
         self.executor = ThreadPoolExecutor(max_workers=self.threadCount)
 
 
-    def imageDownload(self, imageUrl, imgFile, referer=""):
+    def imageDownload(self, imageUrl, imgFile, referer="", min_size=600):
         try:
             req = urllib.request.Request(imageUrl)
             if len(referer) == 0:
@@ -48,7 +48,7 @@ class ImageDownload(object):
                 urllib.request.urlretrieve(imageUrl, imgFile,)
                 if os.path.isfile(imgFile):
                     with Image.open(imgFile) as f:
-                        if min(f.width, f.height) < 320:
+                        if min(f.width, f.height) < min_size:
                             os.remove(imgFile)
 
                 return True
@@ -108,7 +108,7 @@ class ImageDownload(object):
             return False
 
 
-    def imageDownloads(self, download_list, site=""):
+    def imageDownloads(self, download_list, site="", min_size=600):
         download_errors = []
         futures = []
 
@@ -122,16 +122,16 @@ class ImageDownload(object):
                 future = self.executor.submit(self.twitterPhotoDownload, imageUrl[0], imageUrl[1], referer=f"https://twitter.com/")
                 futures.append(future)
             elif "porn-images-xxx.com" in base_fqdn:
-                future = self.executor.submit(self.imageDownload, imageUrl[0], imageUrl[1], referer="")
+                future = self.executor.submit(self.imageDownload, imageUrl[0], imageUrl[1], referer="", min_size=min_size)
                 futures.append(future)
             elif "stat.ameba.jp" in base_fqdn:
-                future = self.executor.submit(self.imageDownload, imageUrl[0], imageUrl[1], referer="")
+                future = self.executor.submit(self.imageDownload, imageUrl[0], imageUrl[1], referer="", min_size=min_size)
                 futures.append(future)
             elif len(site) == 0:
-                future = self.executor.submit(self.imageDownload, imageUrl[0], imageUrl[1], referer=imageUrl[0])
+                future = self.executor.submit(self.imageDownload, imageUrl[0], imageUrl[1], referer=imageUrl[0], min_size=min_size)
                 futures.append(future)
             else:
-                future = self.executor.submit(self.imageDownload, imageUrl[0], imageUrl[1], referer=site)
+                future = self.executor.submit(self.imageDownload, imageUrl[0], imageUrl[1], referer=site, min_size=min_size)
                 futures.append(future)
 
             time.sleep(0.001)

@@ -187,7 +187,7 @@ def mainSearchMovie(nums, keywords, site, directory, threadCount, searchYoutube=
     logger.info(f"└─ saved movieFile {len(new_movie_list)}")
 
 
-def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, siteMode=False, twitterMode=False, instaMode=False, removeMode=False, base_directory="", sub_keywords=[]):
+def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, siteMode=False, twitterMode=False, instaMode=False, removeMode=False, base_directory="", sub_keywords=[], min_size=600):
     user_list = set()
     if nums == 0:
         return user_list
@@ -295,7 +295,7 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
     logger.info(f"Begining downloading {keyword}")
 
     logger.info(f"-> Dowload {str(len(url_image_list))} images")
-    download_errors = imageDownload.imageDownloads(url_image_list, site)
+    download_errors = imageDownload.imageDownloads(url_image_list, site, min_size)
 
     logger.info(f"-> Dowload {str(len(url_movie_list))} movies")
     download_movie_errors = movieDownloads(url_movie_list)
@@ -1646,7 +1646,7 @@ def main():
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
 
     else:
-        mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory)
+        mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, min_size=args.imageSize)
 
 def click(sender):
     log = sender.superview['textlog']
