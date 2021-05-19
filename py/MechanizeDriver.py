@@ -73,11 +73,14 @@ class MechanizeDriver(object):
         try:
             logger.info(f"log in {login}")
             self.browser.addheaders = [("User-agent", "Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03S) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Safari/535.19)")]
+            logger.info(f"log in {login}")
             self.browser.open("https://mobile.twitter.com/session/new", timeout=self.WAIT_TIME)
+            logger.info(f"log in {login}")
             self.browser.select_form(action="/sessions")
             self.browser["session[username_or_email]"] = login
             self.browser["session[password]"] = password
             ret = self.browser.submit()
+            logger.info(f"log in {login}")
             self.referer = self.browser.geturl()
             logger.info(f"logged in")
         except Exception as e:

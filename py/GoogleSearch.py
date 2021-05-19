@@ -255,6 +255,8 @@ class GoogleSearch(object):
 
 
     def search(self, keyword, site, maximum=100, faceMode=False, siteMode=False, twitterMode=False):
+        logger.info(f"twitterMode:{twitterMode}")
+        logger.info(f"site:{site}")
         if twitterMode and len(site) == 0:
             if keyword.startswith('@'):
                 query = self.query_gen("twitter " + keyword, "", False)
@@ -338,7 +340,7 @@ class GoogleSearch(object):
 
             if twitterMode:
                 image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', html)
-                twiurl = f'"(https://twitter.com/{keyword}/status/[\w]+)(\?.*)"';
+                twiurl = f'(https://mobile.twitter.com/{keyword}/status/[\w]+|https://twitter.com/{keyword}/status/[\w]+)(\?|")';
                 image_url_list += re.findall(twiurl, html)
             else:
                 image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(png|gif|jpg)"', html)
@@ -463,7 +465,7 @@ class GoogleSearch(object):
 
 
     def image_search_site(self, site, title="", twitterMode=False):
-        logger.info(f"image_search_site:[{keyword}]")
+        logger.info(f"image_search_site:[{title}]")
 
         results = []
         query_url = site
@@ -482,12 +484,14 @@ class GoogleSearch(object):
         if twitterMode:
             image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', html)
             image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(mp4).*"', html)
+        else:
+            image_url_list = re.findall(r'src="(https://[\w%,#!&*/\+\?\._-]*\.)(jpg|png|mp4)[\w%,#!&*/\+\?\._=-]*"', html)
 
         for link in links:
-            #print("link", link)
+            print("link", link)
             src = link.get("src")
             if src:
-                #print("src", src)
+                print("src", src)
                 src = src if "http" in src else site + src
                 if twitterMode:
                     # https://pbs.twimg.com/media/EXgQ7pWUYAEmu2Y.jpg:small
@@ -500,8 +504,8 @@ class GoogleSearch(object):
                             if len(img) != 0:
                                 image_url_list.append([img[0], ".jpg"])
                 else:
-                    src = re.findall(r'(http[s]*://[\w%,#!&*/\+\?\.-]*\.)(png|gif|jpg)', src)
-                    #print("src", src)
+                    src = re.findall(r'(http[s]*://[\w%,#!&*/\+\?\.-]*\.)(png|gif|jpg).*', src)
+                    print("src", src)
                     if len(src) > 0:
                         image_url_list.append(src[0])
 
@@ -789,8 +793,9 @@ class GoogleSearch(object):
 
 
     def get_twitter_image(self, keyword="", page=25, getRetweet=False):
+        keyword = keyword.replace("@", "")
         query_url = "https://twitter.com/" + keyword
-        #logger.info("url:{}".format(query_url))
+        logger.info("get_twitter_image:{}".format(query_url))
         url_link_list = []
         tweets = {}
         user_list = set()
@@ -981,7 +986,7 @@ class GoogleSearch(object):
 
         js = soup.find("script", text=re.compile("window._sharedData")).text
         data = json.loads(js[js.find("{"):js.rfind("}")+1])
-        #print(json.dumps(data))
+        print(json.dumps(data))
         with open('soup.text', 'w', encoding='utf-8') as htmltext:
             json.dump(data, htmltext, indent=2, ensure_ascii=False)
 

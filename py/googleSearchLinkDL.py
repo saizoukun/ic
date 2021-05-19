@@ -73,6 +73,13 @@ imageDownload = ImageDownload.ImageDownload()
 youtube = YouTubeDownload.YouTubeDownload()
 myImages = ImageControl.ImageControl(True, 20)
 
+SJA_KEYWORD = ["女子アナ グラビア", "女子アナ お宝", "女子アナ ヌード", "女子アナ 写真集", "女子アナ 盗撮", "女子アナ 美脚", "女子アナ twitter", "女子アナ insta", "女子アナ 流出"]
+SA_KEYWORD = ["美脚", "美巨乳", "腹筋 美巨乳", "スレンダー 美巨乳", "くびれ 美巨乳", "グラビア", "無修正", "AV", "緊縛", "パイパン"]
+SG_KEYWORD = ["グラビア", "お宝", "ヌード", "写真集", "着エロ", "流出", "盗撮", "美脚", "twitter", "insta"]
+ST_KEYWORD = ["グラビア", "お宝", "濡れ場", "ヌード", "写真集", "流出", "盗撮", "美脚", "twitter", "insta"]
+SE_KEYWORD = ["色白", "自撮り", "twitter", "腹筋", "tiktok", "投稿", "彼氏", "彼女", "人妻", "寝取り", "女子大生", "寝取られ", "掲示板", "流出"]
+SML_KEYWORD = ["街角", "街撮り", "素人 街角", "素人 街撮り", "素人 盗撮", "素人 盗撮 街角", "素人 盗撮 街撮り"]
+
 def getFileListDir(image_dir, image_type=0):
     image_list = []
     directory = str((pathlib.Path(image_dir)).resolve())
@@ -202,8 +209,14 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
         site, name, url_link_list, user_list = google.get_twitter_image(keyword, nums, getRetweet=faceMode)
         logger.info(f"{keyword} is {name}")
 
+        if siteMode == False:
+            site = ''
+            word = '@' + keyword
+        else:
+            word = keyword
+
         keywords = "twitter @" + keyword
-        results, title = google.search(keyword, site, maximum=nums, faceMode=False, siteMode=False, twitterMode=twitterMode)
+        results, title = google.search(word, site, maximum=nums, faceMode=False, siteMode=False, twitterMode=twitterMode)
         results = url_link_list | results
     elif instaMode and len(site) == 0:
         site, name, url_link_list, user_list = google.get_instagram_image(keyword, nums, getRepost=faceMode)
@@ -240,7 +253,6 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
         if twitterMode and url[1] != 'jpg' and url[1] != 'mp4':
             imageUrl = url[0]
             user_id = url[1]
-            sub_dir = sub_dir if user_id == keyword else "twitter " + user_id
         else:
             imageUrl = url[0] + url[1]
             
@@ -251,6 +263,8 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
             filename = str(i).zfill(4) + filename[1]
 
         imgFile = os.path.join(*[directory, sub_dir, filename])
+        logger.info(f"imageUrl: {imageUrl}")
+        logger.info(f"imgFile: {imgFile}")
 
         logger.debug(f"imageUrl: {imageUrl}")
         if "pbs.twimg.com" in urlparse(imageUrl).hostname:
@@ -260,6 +274,7 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
 
         elif "twitter.com" in urlparse(imageUrl).hostname:
             info = youtube.twitterMovieGetTitle(imageUrl, "")
+            logger.info("info", info)
             if len(info) == 0:
                 continue
             if info.get('uploader_id'):
@@ -267,6 +282,7 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
             else:
                 movie_title = info['id'] + ".mp4"
             imgFile = os.path.join(directory, sub_dir, movie_title)
+            logger.info(f"imgFile: {imgFile}")
 
             if info.get('title'):
                 movie_title = info['title'] + " - "  + info['id'] + ".mp4"
@@ -1017,7 +1033,7 @@ def mainAutoBrowser(site, keyword, directory):
 
     loginUrl = "https://mobile.twitter.com/login"
     browser = MechanizeDriver.MechanizeDriver()
-    browser.twitteReqestlogin("saizoukun00@gmail.com", "sakura")
+    browser.twitteReqestlogin("user@gmail.com", "pass")
 
     #linkUrl = f"https://mobile.twitter.com/search?q={keyword}&src=typed_query"
     twiiterUrl = f"https://mobile.twitter.com/{keyword}/"
@@ -1527,10 +1543,12 @@ def main():
             sja = search women anna
             se = search ero
             sml = search machi legs
+            si = search insta
+
             ''', 
         type=str, 
         default='',
-        choices=["ms", "ys", "sl", "cm", "cc", "o", "p", "pp", "dd", "ddd", "dda", "lddd", "sd", "ed", "md", "pd", "pu", "ls", "tu", "ts", "dbi", "ab", "test", "sja", "sa", "sg", "st", "se", "sml"])
+        choices=["ms", "ys", "sl", "cm", "cc", "o", "p", "pp", "dd", "ddd", "dda", "lddd", "sd", "ed", "md", "pd", "pu", "ls", "tu", "ts", "dbi", "ab", "test", "sja", "sa", "sg", "st", "se", "sml", "si"])
     parser.add_argument("-k", "--keyword", help="keyword", type=str, default="")
     parser.add_argument("-s", "--site", help="site", type=str, default="")
     parser.add_argument("-d", "--directory", help="base Directory", type=str, default="./data")
@@ -1626,25 +1644,27 @@ def main():
     elif args.command == 'ab':
         mainAutoBrowser(args.site, args.keyword, args.targetDirectory)
 
+    elif args.command == 'si':
+        mainTestInsta(args)
+
     elif args.command == 'sja':
-        keywords = ["女子アナ グラビア", "女子アナ お宝", "女子アナ ヌード", "女子アナ 写真集", "女子アナ 盗撮", "女子アナ 美脚", "女子アナ twitter", "女子アナ insta", "女子アナ 流出"]
+        keywords = SJA_KEYWORD
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
     elif args.command == 'sa':
-        keywords = ["美脚", "美巨乳", "腹筋 美巨乳", "スレンダー 美巨乳", "くびれ 美巨乳", "グラビア", "無修正", "AV", "緊縛", "パイパン"]
+        keywords = SA_KEYWORD
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
     elif args.command == 'sg':
-        keywords = ["グラビア", "お宝", "ヌード", "写真集", "着エロ", "流出", "盗撮", "美脚", "twitter", "insta"]
+        keywords = SG_KEYWORD
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
     elif args.command == 'st':
-        keywords = ["グラビア", "お宝", "濡れ場", "ヌード", "写真集", "流出", "盗撮", "美脚", "twitter", "insta"]
+        keywords = ST_KEYWORD
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
     elif args.command == 'se':
-        keywords = ["色白", "自撮り", "twitter", "腹筋", "tiktok", "投稿", "彼氏", "彼女", "人妻", "寝取り", "女子大生", "寝取られ", "掲示板", "流出"]
+        keywords = SE_KEYWORD
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
     elif args.command == 'sml':
-        keywords = ["街角", "街撮り", "素人 街角", "素人 街撮り", "素人 盗撮", "素人 盗撮 街角", "素人 盗撮 街撮り"]
+        keywords = SML_KEYWORD
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
-
     else:
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, min_size=args.imageSize)
 
