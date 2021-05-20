@@ -30,6 +30,8 @@ import GooglePhotos
 import ObjectDetectionAPI
 import SqliteAPI
 import MechanizeDriver
+import AccountType
+
 #import SudachiAPI
 
 ISIOS = 'iPhone' in platform.platform() or 'iPad' in platform.platform()
@@ -72,13 +74,14 @@ youtubeM = YoutubeSearchMovie.YoutubeSearchMovie()
 imageDownload = ImageDownload.ImageDownload()
 youtube = YouTubeDownload.YouTubeDownload()
 myImages = ImageControl.ImageControl(True, 20)
+myAcccountType = AccountType.AccountType()
 
-SJA_KEYWORD = ["女子アナ グラビア", "女子アナ お宝", "女子アナ ヌード", "女子アナ 写真集", "女子アナ 盗撮", "女子アナ 美脚", "女子アナ twitter", "女子アナ insta", "女子アナ 流出"]
-SA_KEYWORD = ["美脚", "美巨乳", "腹筋 美巨乳", "スレンダー 美巨乳", "くびれ 美巨乳", "グラビア", "無修正", "AV", "緊縛", "パイパン"]
-SG_KEYWORD = ["グラビア", "お宝", "ヌード", "写真集", "着エロ", "流出", "盗撮", "美脚", "twitter", "insta"]
-ST_KEYWORD = ["グラビア", "お宝", "濡れ場", "ヌード", "写真集", "流出", "盗撮", "美脚", "twitter", "insta"]
-SE_KEYWORD = ["色白", "自撮り", "twitter", "腹筋", "tiktok", "投稿", "彼氏", "彼女", "人妻", "寝取り", "女子大生", "寝取られ", "掲示板", "流出"]
-SML_KEYWORD = ["街角", "街撮り", "素人 街角", "素人 街撮り", "素人 盗撮", "素人 盗撮 街角", "素人 盗撮 街撮り"]
+SJA_KEYWORD = myAcccountType.SJA_KEYWORD
+SA_KEYWORD = myAcccountType.SA_KEYWORD
+SG_KEYWORD = myAcccountType.SG_KEYWORD
+ST_KEYWORD = myAcccountType.ST_KEYWORD
+SE_KEYWORD = myAcccountType.SE_KEYWORD
+SML_KEYWORD = myAcccountType.SML_KEYWORD
 
 def getFileListDir(image_dir, image_type=0):
     image_list = []
@@ -1103,12 +1106,12 @@ def mainLoopSearch(args):
             readed_users[id] = userInfo
             logger.info(f"user, image_count, movie_count: {userInfo['id']}, {userInfo['name']}, {userInfo['image_count']}, {userInfo['movie_count'] }")
 
-    google.setAccountType(accountTypeInfo, downloadDirectoryInfo, account_type_word, account_type_user, account_type_name)
+    myAcccountType.setAccountType(accountTypeInfo, downloadDirectoryInfo, account_type_word, account_type_user, account_type_name)
     if len(downloadDirectoryInfo) == 0:
-        downloadDirectoryInfo = google.account_type_ok_class
+        downloadDirectoryInfo = myAcccountType.account_type_ok_class
 
     if len(accountTypeInfo) == 0:
-        accountTypeInfo = google.account_type_class
+        accountTypeInfo = myAcccountType.account_type_class
 
     users = []
     base_dirs = ["dl_fav", "dl_close"]
@@ -1379,7 +1382,7 @@ def mainDbUserImport(args):
 
 def mainLoopDuplicateDeleteList(args):
     base_directory = args.targetDirectory
-    account_type_class = google.account_type_class.values()
+    account_type_class = myAcccountType.account_type_class.values()
     base_dirs = ["dl_fav", "dl_close"]
     for base_dir in base_dirs:
         targetDirectory = str((pathlib.Path(os.path.join(base_directory, base_dir))).resolve())
