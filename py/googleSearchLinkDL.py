@@ -266,9 +266,7 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
             filename = str(i).zfill(4) + filename[1]
 
         imgFile = os.path.join(*[directory, sub_dir, filename])
-        logger.info(f"imageUrl: {imageUrl}")
-        logger.info(f"imgFile: {imgFile}")
-
+        logger.debug(f"imgFile: {imgFile}")
         logger.debug(f"imageUrl: {imageUrl}")
         if "pbs.twimg.com" in urlparse(imageUrl).hostname:
             if os.path.isfile(imgFile):
