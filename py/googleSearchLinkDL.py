@@ -68,13 +68,13 @@ logger = logging.getLogger(__name__)
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
-google = GoogleSearch.GoogleSearch()
 googleM = GoogleSearchMovie.GoogleSearchMovie()
 youtubeM = YoutubeSearchMovie.YoutubeSearchMovie()
 imageDownload = ImageDownload.ImageDownload()
 youtube = YouTubeDownload.YouTubeDownload()
 myImages = ImageControl.ImageControl(True, 20)
 myAcccountType = AccountType.AccountType()
+google = GoogleSearch.GoogleSearch(myAcccountType)
 
 SJA_KEYWORD = myAcccountType.SJA_KEYWORD
 SA_KEYWORD = myAcccountType.SA_KEYWORD
@@ -373,7 +373,7 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
     return user_list
     
 
-def mainSearchLinks(keywords, site, directory, siteMode=False, limit=1, threadCount=5):
+def mainSearchLinks(keywords, site, directory, siteMode=False, limit=1, threadCount=5, base_directory=""):
     logger.info("")
 
     logger.info(f"Begining searching {keywords}")
@@ -1634,7 +1634,7 @@ def main():
         mainMinSizeDelete(args.targetDirectory, removeMode=args.renameMode, minSize=args.imageSize)
 
     elif args.command == 'sl':
-        mainSearchLinks(args.keyword, args.site, args.directory, siteMode=args.pageDownload, limit=args.number)
+        mainSearchLinks(args.keyword, args.site, args.targetDirectory, siteMode=args.pageDownload, limit=args.number, base_directory=args.directory)
 
     elif args.command == 'ys':
         mainSearchMovie(args.number, args.keyword, args.site, args.directory, 1, searchYoutube=True, music=args.addOption)

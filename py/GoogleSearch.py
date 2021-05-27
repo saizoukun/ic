@@ -284,10 +284,10 @@ class GoogleSearch(object):
         links = soup.find_all("img")
         image_url_list = []
         if twitterMode:
-            image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', html)
+            image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', html)
             image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(mp4).*"', html)
         else:
-            image_url_list = re.findall(r'src="(https://[\w%,#!&*/\+\?\._-]*\.)(jpg|png|mp4)[\w%,#!&*/\+\?\._=-]*"', html)
+            image_url_list += re.findall(r'src="(https://[\w%,#!&*/\+\?\._-]*\.)(jpg|png|mp4)[\w%,#!&*/\+\?\._=-]*"', html)
 
         for link in links:
             print("link", link)
@@ -372,7 +372,11 @@ class GoogleSearch(object):
             else:
                 src = link.get("href")
             logger.debug(f"src: {src}")
-            if "http" in src:
+            if src is None:
+                continue
+            elif "#" in src:
+                continue
+            elif "http" in src:
                 if twitterMode == False:
                     link_fqdn = urlparse(src).netloc
                     if base_fqdn != link_fqdn:
