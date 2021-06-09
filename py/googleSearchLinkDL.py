@@ -73,15 +73,15 @@ youtubeM = YoutubeSearchMovie.YoutubeSearchMovie()
 imageDownload = ImageDownload.ImageDownload()
 youtube = YouTubeDownload.YouTubeDownload()
 myImages = ImageControl.ImageControl(True, 20)
-myAcccountType = AccountType.AccountType()
-google = GoogleSearch.GoogleSearch(myAcccountType)
+myAccountType = AccountType.AccountType()
+google = GoogleSearch.GoogleSearch(myAccountType)
 
-SJA_KEYWORD = myAcccountType.SJA_KEYWORD
-SA_KEYWORD = myAcccountType.SA_KEYWORD
-SG_KEYWORD = myAcccountType.SG_KEYWORD
-ST_KEYWORD = myAcccountType.ST_KEYWORD
-SE_KEYWORD = myAcccountType.SE_KEYWORD
-SML_KEYWORD = myAcccountType.SML_KEYWORD
+SJA_KEYWORD = myAccountType.SJA_KEYWORD
+SA_KEYWORD = myAccountType.SA_KEYWORD
+SG_KEYWORD = myAccountType.SG_KEYWORD
+ST_KEYWORD = myAccountType.ST_KEYWORD
+SE_KEYWORD = myAccountType.SE_KEYWORD
+SML_KEYWORD = myAccountType.SML_KEYWORD
 
 def getFileListDir(image_dir, image_type=0):
     image_list = []
@@ -236,7 +236,7 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
         keywords = keyword
         results, title = google.search(keywords, site, maximum=nums, faceMode=faceMode, siteMode=siteMode, twitterMode=twitterMode)
         for sub_keyword in sub_keywords:
-            googleLocal = GoogleSearch.GoogleSearch()
+            googleLocal = GoogleSearch.GoogleSearch(myAccountType)
             plus_keyword = keyword + " " + sub_keyword
             url_link_list, _ = googleLocal.search(plus_keyword, site, maximum=nums, faceMode=faceMode, siteMode=siteMode, twitterMode=twitterMode)
             results = results | url_link_list

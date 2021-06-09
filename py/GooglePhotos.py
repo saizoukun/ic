@@ -339,7 +339,12 @@ class GooglePhotos:
         logger.info(f'Upload to {album_id}: {len(image_files)}')
         upload_tokens = []
         for image_file in image_files:
-            # logger.info("image: {}".format(image_file))
+            logger.info("image: {}".format(image_file))
+            image_size = os.path.getsize(image_file)
+            logger.info("image size: {}".format(image_file))
+            if image_size == 0:
+                continue
+
             upload_token = self.upload_image(image_file)
             item = {
                     'description':'',
@@ -348,6 +353,7 @@ class GooglePhotos:
                         'fileName': os.path.basename(image_file)
                         }
                     }
+            #logger.info("item:", item)
             upload_tokens.append(item)
             time.sleep(GooglePhotos.sleep_time)
 
