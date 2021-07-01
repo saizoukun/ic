@@ -54,7 +54,7 @@ class ImageDownload(object):
                 return True
 
             with Image.open(BytesIO(raw_img)) as f:
-                if min(f.width, f.height) >= 320:
+                if min(f.width, f.height) >= min_size:
                     os.makedirs(os.path.dirname(imgFile), exist_ok=True)
                     f.save(imgFile)
                 else:
