@@ -24,6 +24,8 @@ class ImageDownload(object):
 
     def imageDownload(self, imageUrl, imgFile, referer="", min_size=600):
         try:
+            logger.debug(f"imageUrl: {imageUrl}")
+            logger.debug(f"referer: {referer}")
             req = urllib.request.Request(imageUrl)
             if len(referer) == 0:
                 req.headers = {
@@ -36,11 +38,27 @@ class ImageDownload(object):
                     }
 
             try:
+                logger.debug(f"imgFile: {imgFile}")
                 filename = list(reversed(os.path.splitext(imgFile)))[0]
                 logger.debug(f"filename: {filename}")
                 if filename == '.mp4':
-                    urllib.request.urlretrieve(imageUrl, imgFile,)
                     logger.debug(f"file is movie: {imageUrl}")
+                    logger.debug(f"req.headers: {req.headers}")
+                    try:
+                        urllib.request.urlretrieve(imageUrl, imgFile,)
+                    except Exception:
+                        raw_img = urllib.request.urlopen(req).read()
+                        with open(imgFile, 'wb') as f:
+                            f.write(raw_img)
+                    return True
+
+                elif filename == '.gif':
+                    logger.debug(f"file is gif: {imageUrl}")
+                    urllib.request.urlretrieve(imageUrl, imgFile,)
+                    return True
+                elif filename == '.gifv':
+                    logger.debug(f"file is gifv: {imageUrl}")
+                    urllib.request.urlretrieve(imageUrl, imgFile,)
                     return True
                 else:    
                     raw_img = urllib.request.urlopen(req).read()

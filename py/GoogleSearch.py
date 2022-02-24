@@ -56,7 +56,7 @@ class GoogleSearch(object):
         self.accountType = myAccountType
 
 
-    def search(self, keyword, site, maximum=100, faceMode=False, siteMode=False, twitterMode=False):
+    def search(self, keyword, site, maximum=100, faceMode=False, siteMode=False, twitterMode=False, notWords=[]):
         logger.info(f"twitterMode:{twitterMode}")
         logger.info(f"site:{site}")
         if twitterMode and len(site) == 0:
@@ -70,10 +70,13 @@ class GoogleSearch(object):
                 query = self.query_gen(keyword, "https://twitter.com/" + keyword + "/", False)
                 return self.image_search_twitter(query, maximum, twitterMode, keyword=keyword), "twitter @" + keyword
         elif siteMode:
-            return self.image_search_site(site, title=keyword, twitterMode=twitterMode)
+            return self.image_search_site(site, title=keyword, twitterMode=twitterMode, notMode=faceMode, notWords=notWords)
         else:
-            query = self.query_gen(keyword, site, faceMode)
-            return self.image_search(query, maximum, twitterMode, keyword=keyword), keyword
+            if 'http' not in site:
+                query = self.query_gen(keyword, '', faceMode)
+            else:
+                query = self.query_gen(keyword, site, faceMode)
+            return self.image_search(query, maximum, twitterMode, faceMode=faceMode, keyword=keyword, site=site), keyword
 
 
     def linkSearch(self, site, url_link_list, keyword="", limit=0, count=0, twitterMode=False):
@@ -121,8 +124,9 @@ class GoogleSearch(object):
         page = 0
 
 
-    def image_search(self, query_gen, maximum, twitterMode=False, keyword=""):
+    def image_search(self, query_gen, maximum, twitterMode=False, faceMode=False, keyword="", site=""):
         logger.info(f"image_search:[{keyword}]")
+        logger.info(f"image_search:[{site}]")
 
         results = set()
         total = 0
@@ -132,6 +136,9 @@ class GoogleSearch(object):
             # search
             if '.html' in keyword:
                 with open(keyword, 'r', encoding='utf-8') as htmltext:
+                    html = htmltext.read()
+            elif len(site) != 0 and 'http' not in site:
+                with open(site, 'r', encoding='utf-8') as htmltext:
                     html = htmltext.read()
             else:
                 try:
@@ -147,10 +154,34 @@ class GoogleSearch(object):
 
             if twitterMode:
                 image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', html)
-                twiurl = f'(https://mobile.twitter.com/{keyword}/status/[\w]+|https://twitter.com/{keyword}/status/[\w]+)(\?|")';
+                twiurl = f'(https://mobile.twitter.com/{keyword}/status/[\w]+|https://twitter.com/{keyword}/status/[\w]+|https://mobile.twitter.com/{keyword}/status/[\w]+)(\?|")';
+                logger.debug(f'twiurl:{twiurl}')
                 image_url_list += re.findall(twiurl, html)
+                twiurl = f'(/status/[\w]+)(\?|")';
+                logger.debug(f'twiurl:{twiurl}')
+                temp_url_list = re.findall(twiurl, html)
+                temp_new_url_list = list()
+                for temp in temp_url_list:
+                    logger.debug(f'temp, {temp[0]}')
+                    new_url = temp[0].replace(f'/status/', f'https://twitter.com/{keyword}/status/')
+                    logger.debug(f'new_url, {new_url}')
+                    temp_new_url_list.append((new_url, temp[1]))
+                image_url_list += temp_new_url_list
+            elif '.html' in keyword and faceMode:
+                #tumbX Mode
+                image_url_list = re.findall(r'data-hd="(https://[\w%,#!&*/\+\?\._-]*\.)(png|gif|jpg)"', html)
+                image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(mp4|gifv)"', html)
+                image_url_list += re.findall(r'src="(https://[\w%,#!&*/\+\?\._-]*)(==)"', html)
+                image_url_list += re.findall(r'src="(https://[\w%,#!&*/\+\?\._-]*.)(jpg)\?.*"', html)
+                temp_url_list = re.findall(r'"(//[\w%,#!&*/\+\?\._-]*\.)(png|gif|jpg|mp4)"', html)
+                temp_new_url_list = list()
+                for temp in temp_url_list:
+                    logger.debug(f'temp, {temp[0]}')
+                    temp_new_url_list.append(("https:" + temp[0], temp[1]))
+                image_url_list += temp_new_url_list
+                
             else:
-                image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(png|gif|jpg)"', html)
+                image_url_list = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(png|gif|jpg|mp4)"', html)
 
             if len(image_url_list) == 0:
                 no_count += 1
@@ -158,6 +189,10 @@ class GoogleSearch(object):
                     break
             else:
                 no_count = 0
+
+            logger.info(f"image_url_list.type:type(image_url_list)")
+
+
 
             # add search results
             image_url_list = [url for url in image_url_list if "auction" not in urlparse(url[0] + url[1]).hostname]
@@ -169,7 +204,7 @@ class GoogleSearch(object):
             logger.debug(f"resultsCount:{len(results)}")
             if total >= maximum or len(results) >= maximum:
                 break
-            elif '.html' in keyword:
+            elif '.html' in keyword or 'http' not in site:
                 break
 
         logger.info(f"resultsCount:{len(results)}")
@@ -273,56 +308,62 @@ class GoogleSearch(object):
         return set(list(results)[0:maximum])
 
 
-    def image_search_site(self, site, title="", twitterMode=False):
+    def image_search_site(self, site, title="", twitterMode=False, notMode=False, notWords=[]):
         logger.info(f"image_search_site:[{title}]")
 
         results = []
         query_url = site
+        
         url_parse = urlparse(query_url)
         base_fqdn = url_parse.netloc
-        logging.info("title:{}".format(title))
-        logging.info("url:{}".format(query_url))
+        #print(url_parse, url_parse)
+        logger.info("title:{}".format(title))
+        logger.info("url:{}".format(query_url))
         html = self.session.get(query_url).text
-        with open('html.text', 'w', encoding='utf-8') as htmltext:
+        html = html.replace('\\u002F', '/')
+        with open('html.html', 'w', encoding='utf-8') as htmltext:
             htmltext.write(html)
 
         soup = BeautifulSoup(html, "lxml")
         if len(title) == 0:
             title = soup.find('title').text
-        links = soup.find_all("img")
+            title = title.replace('-', '_')
+            title = title.replace(' ', '_')
+
+        logger.debug('__re.findall__')
         image_url_list = []
         if twitterMode:
             image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', html)
+            image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(png).*"', html)
+            image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(gif).*"', html)
             image_url_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(mp4).*"', html)
         else:
             image_url_list += re.findall(r'src="(https://[\w%,#!&*/\+\?\._-]*\.)(jpg|png|mp4|gif)[\w%,#!&*/\+\?\._=-]*"', html)
+            image_url_list += re.findall(r'src="(/[\w%,#!&*/\+\?\._-]*\.)(jpg|png|mp4|gif)[\w%,#!&*/\+\?\._=-]*"', html)
+            image_url_list += re.findall(r'src="([\w%,:#!&*/\+\?\._-]*\.)(\=\=)"', html)
             href_list = re.findall(r'href="([\w%,:#!&*/\+\?\._-]*\.)(jpg|png|mp4|gif)"', html)
-            logger.info(href_list)
+            href_list += re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', html)
+            #logger.info(href_list)
             image_url_list += href_list
 
-        for link in links:
-            print("link", link)
+        logger.debug('__find_all_img__')
+        imgs = soup.find_all("img")
+        for link in imgs:
+            #print("link", link)
             src = link.get("src")
             if src:
-                #print("src", src)
-                src = src if "http" in src else f'{url_parse.scheme}://{url_parse.netloc}' + src
-                if twitterMode:
-                    # https://pbs.twimg.com/media/EXgQ7pWUYAEmu2Y.jpg:small
-                    src = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*"', src)
-                    #src = re.findall(r'"(https://[\w%,#!&*/\+\?\._-]*\.)(jpg).*".+"https://twitter.com/am_s_e/status/\d+[\?lang.*","|","]', src)
-                    
-                    #print(src)
-                    if len(src) > 0:
-                        for img in src:
-                            if len(img) != 0:
-                                image_url_list.append([img[0], ".jpg"])
+                logger.debug(f"img.src: {src}")
+                if (type(src) is str):
+                    if ':' in src:
+                        continue
+                    image_url_list.append([src, ""])
                 else:
-                    src = re.findall(r'(http[s]*://[\w%,#!&*/\+\?\.-]*\.)(png|gif|jpg).*', src)
-                    #print("src", src)
-                    if len(src) > 0:
-                        image_url_list.append(src[0])
+                    if ':' in src[0]:
+                        continue
+                    image_url_list.append(src[0])
 
         # リンクの画像を取得
+        logger.debug('__find_all_a__')
         links = soup.find_all("a", href=re.compile('(.png|.jpg|.gif|.mp4)'))
         links += soup.find_all("link", href=re.compile('(.png|.jpg|.gif|.mp4)'))
 
@@ -331,23 +372,54 @@ class GoogleSearch(object):
             logger.debug(f"src: {src}")
             if "http" not in src:
                 continue
+
             not_same = True
             for url in image_url_list:
-                if url == src:
+                if url[0] + url[1] == src:
                     not_same = False
                     break
             if not_same: 
                 image_url_list.append([src, ""])
 
+        logger.debug(f"url_parse.scheme:{url_parse.scheme}")
+
+        if notMode and len(notWords) == 0:
+            notWords = ['s.j', '0x1', '150x150', '180x180', 'tmp', '_450.']
+
         for url in image_url_list:
+            if notMode:
+                useNotWord = False
+                for notWord in notWords:
+                    logger.debug(f'notword: {notWord}')
+                    if notWord in url[0]:
+                        useNotWord = True
+                        break
+                logger.debug(f"useNotWord: {useNotWord}")
+                if useNotWord:
+                    logger.debug(f"notWord url: {url}")
+                    continue
+
             same = False
             for res in results:
                 if res == url:
                     same = True
                     break
             if same == False:
-                href = url[0] if "http" in url[0] else f'{url_parse.scheme}://{url_parse.netloc}' + url[0]
-                #logger.info(f"href: {href}")
+                logger.debug(f"url:{url}")
+                if "//" not in url[0]:
+                    logger.debug(f"url[0]:{url[0]}")
+                    href = urllib.parse.urljoin(query_url, url[0])
+                    #href = f'{url_parse.scheme}://{url_parse.netloc}/' + url[0]
+                elif "http" not in url[0]:
+                    href = f'{url_parse.scheme}:' + url[0]
+                else:
+                    href = url[0]
+                logger.debug(f"href: {href}")
+                if twitterMode:
+                    if 'twi' not in href:
+                        logger.debug(f"href: {href}")
+                        continue
+
                 url =[href, url[1], '']
                 results.append(url)
         logger.info(f"results: {results}")
@@ -360,7 +432,8 @@ class GoogleSearch(object):
 
         query_url = site
         logger.info("url:{}".format(query_url))
-        base_fqdn = urlparse(query_url).netloc
+        url_parse = urlparse(query_url)
+        base_fqdn = url_parse.netloc
         html = self.session.get(query_url).text
         #with open('html.text', 'w', encoding='utf-8') as htmltext:
         #    htmltext.write(html)
@@ -394,6 +467,12 @@ class GoogleSearch(object):
                     link_fqdn = urlparse(src).netloc
                     if base_fqdn != link_fqdn:
                         continue
+            elif "//" not in src:
+                logger.debug(f"url[0]:{src}")
+                src = urllib.parse.urljoin(query_url, src)
+                #href = f'{url_parse.scheme}://{url_parse.netloc}/' +src
+            elif "http" not in src:
+                src = f'{url_parse.scheme}:' + src
             else:
                 continue
             not_same = True

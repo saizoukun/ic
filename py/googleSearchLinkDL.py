@@ -24,6 +24,7 @@ import YouTubeDownload
 import GoogleSearch
 import GoogleSearchMovie
 import YoutubeSearchMovie
+import XVideoSearchMovie
 import ImageControl
 import ImageDownload
 import GooglePhotos
@@ -40,9 +41,10 @@ if ISIOS:
     import IOSPhotos
     myPhotos = IOSPhotos.IOSPhotos()
 else:
-    import GoogleTensorFlow
+    #import GoogleTensorFlow
     #import SeleniumDriver
     #import TesseractAPI
+    print("not IOS")
 
 isys :bool = True
 
@@ -70,6 +72,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 googleM = GoogleSearchMovie.GoogleSearchMovie()
 youtubeM = YoutubeSearchMovie.YoutubeSearchMovie()
+xvideoM = XVideoSearchMovie.XVideoSearchMovie()
 imageDownload = ImageDownload.ImageDownload()
 youtube = YouTubeDownload.YouTubeDownload()
 myImages = ImageControl.ImageControl(True, 20)
@@ -82,6 +85,7 @@ SG_KEYWORD = myAccountType.SG_KEYWORD
 ST_KEYWORD = myAccountType.ST_KEYWORD
 SE_KEYWORD = myAccountType.SE_KEYWORD
 SML_KEYWORD = myAccountType.SML_KEYWORD
+SF_KEYWORD = myAccountType.SF_KEYWORD
 
 def getFileListDir(image_dir, image_type=0):
     image_list = []
@@ -197,7 +201,51 @@ def mainSearchMovie(nums, keywords, site, directory, threadCount, searchYoutube=
     logger.info(f"└─ saved movieFile {len(new_movie_list)}")
 
 
-def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, siteMode=False, twitterMode=False, instaMode=False, removeMode=False, base_directory="", sub_keywords=[], min_size=600):
+def mainSearchVideo(nums, keywords, site, directory, threadCount, searchYoutube=False, music=False, twitterMode=False, faceMode=False):
+
+    os.makedirs(directory, exist_ok=True)
+    os.makedirs(os.path.join(directory, keywords), exist_ok=True)
+
+    # search movies
+    logger.info(f"Begining searching {keywords}")
+    if searchYoutube:
+        results = youtubeM.search(keywords, maximum=nums)
+    else:
+        results = googleM.search(keywords, site, maximum=nums, twitterMode=twitterMode, faceMode=faceMode)
+    logger.info(f"-> Found {str(len(results))} movies")
+
+    url_movie_list = []
+    for url in results:
+        if music:
+            type = youtube.EXT_MUSIC
+        else:
+            type = youtube.EXT_MOVIE
+
+        movieTitle = youtube.movieGetTitle(url[1], type)
+        if movieTitle == None:
+            continue
+        movieFile = os.path.join(
+            *[directory, keywords, movieTitle + '-' + url[1] + "." + type])
+        url_movie_list.append([url[1], movieFile, type])
+
+    # download
+    download_errors = movieDownloads(url_movie_list)
+
+    new_movie_list = []
+    for movie in url_movie_list:
+        if os.path.isfile(movie[1]) == False:
+            logger.info(f"File Not Found: {movie[1]}")
+            continue
+        new_movie_list.append(movie[1])
+
+    logger.info("-" * 50)
+    logger.info("Complete downloaded")
+    logger.info(f"├─ Successful downloaded {len(results) - len(download_errors)} movies")
+    logger.info(f"└─ Failed to download {len(download_errors)}")
+    logger.info(f"└─ saved movieFile {len(new_movie_list)}")
+
+
+def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, siteMode=False, twitterMode=False, instaMode=False, removeMode=False, base_directory="", sub_keywords=[], min_size=600, notWords=[]):
     user_list = set()
     if nums == 0:
         return user_list
@@ -234,7 +282,7 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
             results = url_link_list | results
     else:
         keywords = keyword
-        results, title = google.search(keywords, site, maximum=nums, faceMode=faceMode, siteMode=siteMode, twitterMode=twitterMode)
+        results, title = google.search(keywords, site, maximum=nums, faceMode=faceMode, siteMode=siteMode, twitterMode=twitterMode, notWords=notWords)
         for sub_keyword in sub_keywords:
             googleLocal = GoogleSearch.GoogleSearch(myAccountType)
             plus_keyword = keyword + " " + sub_keyword
@@ -258,14 +306,21 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
             user_id = url[1]
         else:
             imageUrl = url[0] + url[1]
+            imageUrl = imageUrl.replace('_450', '_1000')
             
         filename = list(reversed(imageUrl.split('/')))[0]
 
-        if len(filename) > 128:
-            filename = os.path.splitext(filename)
-            filename = str(i).zfill(4) + filename[1]
+        if '.html' in keyword and faceMode and 'tumblr_' in filename:
+            filename = filename.replace('tumblr_', '')
+            filename = filename.replace('inline_', '')
+            group_dir = filename[:4]
+            imgFile = os.path.join(*[directory, sub_dir, group_dir, filename])
+        else:
+            if len(filename) > 128:
+                filename = os.path.splitext(filename)
+                filename = str(i).zfill(4) + filename[1]
+            imgFile = os.path.join(*[directory, sub_dir, filename])
 
-        imgFile = os.path.join(*[directory, sub_dir, filename])
         logger.debug(f"imgFile: {imgFile}")
         logger.debug(f"imageUrl: {imageUrl}")
         if "pbs.twimg.com" in urlparse(imageUrl).hostname:
@@ -334,14 +389,16 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
         new_image_list.append(img[1])
 
     for delete in delete_image_list:
-        os.remove(delete)
+        if os.path.isfile(delete):
+            os.remove(delete)
 
     addImage_errors = []
     if ISIOS:
         logger.info(f"check imageFile {len(new_image_list)}")
         new_image_list = myImages.duplicateImageList(new_image_list, delete_duplicate_list)
         for delete in delete_duplicate_list:
-            os.remove(delete)
+            if os.path.isfile(delete):
+                os.remove(delete)
 
         album = myPhotos.makeAlbum(keywords)
         for img in new_image_list:
@@ -373,7 +430,7 @@ def mainSearch(nums, keyword, site, directory, threadCount=1, faceMode=False, si
     return user_list
     
 
-def mainSearchLinks(keywords, site, directory, siteMode=False, limit=1, threadCount=5, base_directory=""):
+def mainSearchLinks(keywords, site, directory, siteMode=False, limit=1, threadCount=5, base_directory="", notMode=False, notWords=[]):
     logger.info("")
 
     logger.info(f"Begining searching {keywords}")
@@ -388,11 +445,12 @@ def mainSearchLinks(keywords, site, directory, siteMode=False, limit=1, threadCo
 
     new_url_link_list = []
     for keyword in keywords:
+        logger.debug(f'keyword:{keyword}')
         new_url_link_list += [link for link in url_link_list if keyword in link]
 
     for link in new_url_link_list:
         try:
-            mainSearch(1, "", link, directory, threadCount=threadCount, siteMode=siteMode)
+            mainSearch(1, "", link, directory, threadCount=threadCount, faceMode=True, siteMode=siteMode, notWords=notWords)
             time.sleep(0.005)
         except Exception as e:
             logger.warning(e)
@@ -1517,6 +1575,7 @@ def main():
         help='''command\n
             ms = movie search
             ys = youtube search
+            xs = xvideo search
             sl = site link search
             cm = cascade check
             cc = color cascade check
@@ -1541,6 +1600,7 @@ def main():
             sa = search adult
             st = search talent
             sg = search gravure
+            sf = search for
             sja = search women anna
             se = search ero
             sml = search machi legs
@@ -1549,7 +1609,7 @@ def main():
             ''', 
         type=str, 
         default='',
-        choices=["ms", "ys", "sl", "cm", "cc", "o", "p", "pp", "dd", "ddd", "dda", "lddd", "sd", "ed", "md", "pd", "pu", "ls", "tu", "ts", "dbi", "ab", "test", "sja", "sa", "sg", "st", "se", "sml", "si"])
+        choices=["ms", "ys", "xs", "sl", "cm", "cc", "o", "p", "pp", "dd", "ddd", "dda", "lddd", "sd", "ed", "md", "pd", "pu", "ls", "tu", "ts", "dbi", "ab", "test", "sja", "sa", "sg", "st", "se", "sf", "sml", "si"])
     parser.add_argument("-k", "--keyword", help="keyword", type=str, default="")
     parser.add_argument("-s", "--site", help="site", type=str, default="")
     parser.add_argument("-d", "--directory", help="base Directory", type=str, default="./data")
@@ -1637,6 +1697,9 @@ def main():
         mainSearchLinks(args.keyword, args.site, args.targetDirectory, siteMode=args.pageDownload, limit=args.number, base_directory=args.directory)
 
     elif args.command == 'ys':
+        mainSearchVideo(args.number, args.keyword, args.site, args.directory, 1, searchYoutube=True, music=args.addOption)
+
+    elif args.command == 'ys':
         mainSearchMovie(args.number, args.keyword, args.site, args.directory, 1, searchYoutube=True, music=args.addOption)
 
     elif args.command == 'ms':
@@ -1662,6 +1725,9 @@ def main():
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
     elif args.command == 'se':
         keywords = SE_KEYWORD
+        mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
+    elif args.command == 'sf':
+        keywords = SF_KEYWORD
         mainSearch(args.number, args.keyword, args.site, args.targetDirectory, 20, faceMode=args.faceMode, siteMode=args.pageDownload, twitterMode=args.addOption, removeMode=args.renameMode, base_directory=args.directory, sub_keywords=keywords)
     elif args.command == 'sml':
         keywords = SML_KEYWORD

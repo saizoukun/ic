@@ -326,13 +326,14 @@ class ImageControl(object):
         target_list = self.getCalcHistDirSearchList(target_dir, sub_dir_check=sub_dir_check, add_mode=add_mode)
 
         logger.info("Duplicate Check ")
-        new_list = {}
-        duplicate_list = []
-        new_file_list = []
-        for img, imgHist in sorted(target_list.items(), key=lambda x:x[0], reverse=reverse):
-            duplicate = False
+        if self.CVON:
 
-            if self.CVON:
+            new_list = {}
+            duplicate_list = []
+            new_file_list = []
+            for img, imgHist in sorted(target_list.items(), key=lambda x:x[0], reverse=reverse):
+                duplicate = False
+
                 filename = os.path.basename(img)
                 name = filename.split('.')[0]            
                 if name.isdecimal() == False and filename in new_file_list:
@@ -345,25 +346,38 @@ class ImageControl(object):
                     if duplicate == True:
                         break
                     time.sleep(0.005)
-            else:
-                if imgHist in new_list.values():
-                    duplicate = True
 
-            time.sleep(0.005)
+                time.sleep(0.005)
 
-            if duplicate:
-                logger.debug(f"duplicated file!: {img}")
-                org = {v: k for k, v in new_list.items() if v == imgHist}
-                logger.debug(f"duplicated original: {org[imgHist]}")
-                if delete_mode and os.path.isfile(img):
-                    os.remove(img)
-                    logger.debug(f"removed file!: {img}")
+                if duplicate:
+                    logger.debug(f"duplicated file!: {img}")
+                    org = {v: k for k, v in new_list.items() if v == imgHist}
+                    logger.debug(f"duplicated original: {org[imgHist]}")
+                    if delete_mode and os.path.isfile(img):
+                        os.remove(img)
+                        logger.debug(f"removed file!: {img}")
+                    else:
+                        duplicate_list.append(img)
                 else:
-                    duplicate_list.append(img)
-            else:
-                new_list[img] = imgHist
-                new_file_list = [os.path.basename(f) for f in new_list.keys()]
-                new_file_list = set(new_file_list)
+                    new_list[img] = imgHist
+                    new_file_list = [os.path.basename(f) for f in new_list.keys()]
+                    new_file_list = set(new_file_list)
+
+        else:
+            new_list = set()
+            duplicate_list = []
+            for img, imgHist in sorted(target_list.items(), key=lambda x:x[0], reverse=reverse):
+                if imgHist in new_list:
+                    logger.debug(f"duplicated file!: {img}")
+                    if delete_mode and os.path.isfile(img):
+                        os.remove(img)
+                        logger.debug(f"removed file!: {img}")
+                    else:
+                        duplicate_list.append(img)
+                else:
+                    new_list.add(imgHist)
+
+                time.sleep(0.005)
 
         return duplicate_list        
 

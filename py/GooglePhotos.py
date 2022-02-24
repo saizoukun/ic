@@ -22,7 +22,7 @@ class GooglePhotos:
         "removeMediaFromAlbum": "https://photoslibrary.googleapis.com/v1/albums/{}:batchRemoveMediaItems"
     }
     scope = ["https://www.googleapis.com/auth/photoslibrary"]
-    sleep_time = 0.5
+    sleep_time = 1
     photo_size_format = "{base}=w{width}-h{height}"
  
     def __init__(self, directory, token_path="token.json", credential_path="credentials.json"):
@@ -339,9 +339,9 @@ class GooglePhotos:
         logger.info(f'Upload to {album_id}: {len(image_files)}')
         upload_tokens = []
         for image_file in image_files:
-            logger.info("image: {}".format(image_file))
+            #logger.info("image: {}".format(image_file))
             image_size = os.path.getsize(image_file)
-            logger.info("image size: {}".format(image_file))
+            #logger.info("image size: {}".format(image_file))
             if image_size == 0:
                 continue
 

@@ -1,12 +1,17 @@
 import logging
 import time
 from selenium import webdriver
+from selenium.webdriver.chrome import options
 from selenium.webdriver.common.keys import Keys as keys
 
 class SeleniumDriver(object):
     def __init__(self):
         self.WAIT_TIME = 1
-        self.browser = webdriver.Chrome()
+        self.options = webdriver.ChromeOptions()
+        self.options.add_argument('--headless')
+        self.options.add_argument('--window-size=1600,1200')
+
+        self.browser = webdriver.Chrome(options=self.options)
 
     def reqestUrl(self, url):
         try:
@@ -37,6 +42,14 @@ class SeleniumDriver(object):
             self.browser.save_screenshot(fileName)
         except Exception as e:
             logging.error(f"Not shot: {fileName}")
+            logging.error(e)
+
+
+    def actionScroll(self, positionX=0, positionY=0):
+        try:
+            self.browser.execute_script(f"window.scrollTo({positionY}, {positionX});") 
+        except Exception as e:
+            logging.error("actionScroll")
             logging.error(e)
 
 
